@@ -114,10 +114,12 @@ const AddLabReport = () => {
     setLoading(true);
 
     try {
-      // Upload file
+      // Upload file with patient_id-based folder structure
       const fileExt = formData.file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `lab-reports/${fileName}`;
+      const timestamp = Date.now();
+      const sanitizedFileName = formData.file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const fileName = `${timestamp}_${sanitizedFileName}`;
+      const filePath = `lab-reports/${formData.patientId}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('medical-files')
@@ -139,7 +141,8 @@ const AddLabReport = () => {
           report_type: formData.testType,
           remarks: formData.remarks,
           tags: formData.tags,
-          file_path: filePath
+          file_path: filePath,
+          file_url: publicUrl
         });
 
       if (error) throw error;

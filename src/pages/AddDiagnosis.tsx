@@ -95,8 +95,11 @@ const AddDiagnosis = () => {
       // Upload file if exists
       if (formData.file) {
         const fileExt = formData.file.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `diagnosis/${fileName}`;
+        const timestamp = Date.now();
+        const sanitizedFileName = formData.file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const fileName = `${timestamp}_${sanitizedFileName}`;
+        // Use patient_id-based folder structure
+        const filePath = `diagnoses/${formData.patientId}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('medical-files')
