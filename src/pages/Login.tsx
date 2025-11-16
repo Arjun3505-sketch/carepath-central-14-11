@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import { GlobeDemo } from "@/components/ui/GlobeDemo";
 
 const authSchema = z.object({
   email: z.string().email("Invalid email address").max(255, "Email too long"),
@@ -170,106 +170,119 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">EHR System</CardTitle>
-          <CardDescription>
-            {isLogin ? "Sign in to access your electronic health records" : "Create your account to get started"}
-          </CardDescription>
-        </CardHeader>
+    <div className="flex min-h-screen bg-slate-900">
+      {/* Left side - Globe */}
+      <div className="hidden lg:flex lg:w-1/2 items-center justify-center relative overflow-hidden">
+        <GlobeDemo />
+      </div>
+      
+      {/* Right side - Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 bg-slate-900">
+        <Card className="w-full max-w-md bg-slate-800/80 backdrop-blur-sm border-slate-700">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-white">EHR System</CardTitle>
+            <CardDescription className="text-neutral-300">
+              {isLogin ? "Sign in to access your electronic health records" : "Create your account to get started"}
+            </CardDescription>
+          </CardHeader>
         
-        <Tabs value={isLogin ? "login" : "signup"} onValueChange={(v) => setIsLogin(v === "login")} className="px-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
-          </TabsList>
+          <Tabs value={isLogin ? "login" : "signup"} onValueChange={(v) => setIsLogin(v === "login")} className="px-6">
+            <TabsList className="grid w-full grid-cols-2 bg-slate-700/50">
+              <TabsTrigger value="login" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Login</TabsTrigger>
+              <TabsTrigger value="signup" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Sign Up</TabsTrigger>
+            </TabsList>
           
-          <TabsContent value="login">
-            <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-4 px-0">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </CardContent>
-              <CardFooter className="px-0">
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Signing in..." : "Sign In"}
-                </Button>
-              </CardFooter>
-            </form>
-          </TabsContent>
+            <TabsContent value="login">
+              <form onSubmit={handleSubmit}>
+                <CardContent className="space-y-4 px-0">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-neutral-200">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="bg-slate-700/50 border-slate-600 text-white placeholder:text-neutral-400"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-neutral-200">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="bg-slate-700/50 border-slate-600 text-white placeholder:text-neutral-400"
+                    />
+                  </div>
+                </CardContent>
+                <CardFooter className="px-0">
+                  <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+                    {loading ? "Signing in..." : "Sign In"}
+                  </Button>
+                </CardFooter>
+              </form>
+            </TabsContent>
           
-          <TabsContent value="signup">
-            <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-4 px-0">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
-                  <Input
-                    id="signup-name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="Create a password (min 6 characters)"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </CardContent>
-              <CardFooter className="px-0">
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Creating account..." : "Sign Up"}
-                </Button>
-              </CardFooter>
-            </form>
-          </TabsContent>
-        </Tabs>
-      </Card>
+            <TabsContent value="signup">
+              <form onSubmit={handleSubmit}>
+                <CardContent className="space-y-4 px-0">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-name" className="text-neutral-200">Full Name</Label>
+                    <Input
+                      id="signup-name"
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="bg-slate-700/50 border-slate-600 text-white placeholder:text-neutral-400"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email" className="text-neutral-200">Email</Label>
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="bg-slate-700/50 border-slate-600 text-white placeholder:text-neutral-400"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password" className="text-neutral-200">Password</Label>
+                    <Input
+                      id="signup-password"
+                      type="password"
+                      placeholder="Create a password (min 6 characters)"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="bg-slate-700/50 border-slate-600 text-white placeholder:text-neutral-400"
+                    />
+                  </div>
+                </CardContent>
+                <CardFooter className="px-0">
+                  <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+                    {loading ? "Creating account..." : "Sign Up"}
+                  </Button>
+                </CardFooter>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </Card>
+      </div>
     </div>
   );
 };

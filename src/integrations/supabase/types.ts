@@ -215,6 +215,7 @@ export type Database = {
           duration_days: number | null
           frequency: string | null
           id: string
+          instructions: string | null
           medication: string
           prescription_id: string
           quantity: number | null
@@ -224,6 +225,7 @@ export type Database = {
           duration_days?: number | null
           frequency?: string | null
           id?: string
+          instructions?: string | null
           medication: string
           prescription_id: string
           quantity?: number | null
@@ -233,6 +235,7 @@ export type Database = {
           duration_days?: number | null
           frequency?: string | null
           id?: string
+          instructions?: string | null
           medication?: string
           prescription_id?: string
           quantity?: number | null
@@ -318,7 +321,6 @@ export type Database = {
           complications: string | null
           created_at: string | null
           date: string
-          file_url: string | null
           icd_pcs_code: string | null
           id: string
           outcome: string | null
@@ -331,7 +333,6 @@ export type Database = {
           complications?: string | null
           created_at?: string | null
           date: string
-          file_url?: string | null
           icd_pcs_code?: string | null
           id?: string
           outcome?: string | null
@@ -344,7 +345,6 @@ export type Database = {
           complications?: string | null
           created_at?: string | null
           date?: string
-          file_url?: string | null
           icd_pcs_code?: string | null
           id?: string
           outcome?: string | null
