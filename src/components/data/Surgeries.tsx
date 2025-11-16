@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Scissors, Calendar, AlertTriangle, CheckCircle, User } from "lucide-react";
+import { Scissors, Calendar, AlertTriangle, CheckCircle, User, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -16,6 +17,7 @@ interface Surgery {
   complications: string | null;
   remarks: string | null;
   icd_pcs_code: string | null;
+  file_url: string | null;
   created_at: string;
   doctor_name?: string;
 }
@@ -103,6 +105,39 @@ const Surgeries = () => {
     );
   };
 
+  const handleDownload = async (filePath: string | null, procedure: string) => {
+    if (!filePath) return;
+    
+    try {
+      const { data, error } = await supabase.storage
+        .from('medical-files')
+        .download(filePath);
+
+      if (error) throw error;
+
+      const url = window.URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `surgery_${procedure.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "File downloaded successfully",
+      });
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast({
+        title: "Error",
+        description: "Failed to download file",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -145,6 +180,7 @@ const Surgeries = () => {
                   <TableHead>Complications</TableHead>
                   <TableHead>ICD-PCS Code</TableHead>
                   <TableHead>Remarks</TableHead>
+                  <TableHead>File</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -180,6 +216,20 @@ const Surgeries = () => {
                       <div className="max-w-xs truncate text-sm">
                         {surgery.remarks || "No remarks"}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {surgery.file_url ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownload(surgery.file_url, surgery.procedure)}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">No file</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

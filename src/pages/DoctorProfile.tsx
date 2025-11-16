@@ -30,6 +30,8 @@ const DoctorProfile = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [patients, setPatients] = useState<any[]>([]);
+  const [loadingPatients, setLoadingPatients] = useState(false);
 
   const [doctorInfo, setDoctorInfo] = useState({
     name: "",
@@ -105,6 +107,63 @@ const DoctorProfile = () => {
     emergencyAvailable: true
   });
 
+  const fetchMyPatients = async () => {
+    try {
+      setLoadingPatients(true);
+      if (!user) return;
+
+      // Get doctor record
+      const { data: doctorData, error: doctorError } = await supabase
+        .from('doctors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (doctorError || !doctorData) {
+        throw new Error("Doctor profile not found");
+      }
+
+      // Get all unique patient IDs from diagnoses, prescriptions, surgeries, and lab reports
+      const [diagnosesRes, prescriptionsRes, surgeriesRes, labReportsRes] = await Promise.all([
+        supabase.from('diagnoses').select('patient_id').eq('doctor_id', doctorData.id),
+        supabase.from('prescriptions').select('patient_id').eq('doctor_id', doctorData.id),
+        supabase.from('surgeries').select('patient_id').eq('surgeon_id', doctorData.id),
+        supabase.from('lab_reports').select('patient_id').eq('doctor_id', doctorData.id)
+      ]);
+
+      const patientIds = new Set([
+        ...(diagnosesRes.data?.map(d => d.patient_id) || []),
+        ...(prescriptionsRes.data?.map(p => p.patient_id) || []),
+        ...(surgeriesRes.data?.map(s => s.patient_id) || []),
+        ...(labReportsRes.data?.map(l => l.patient_id) || [])
+      ]);
+
+      if (patientIds.size === 0) {
+        setPatients([]);
+        return;
+      }
+
+      // Fetch patient details
+      const { data: patientsData, error: patientsError } = await supabase
+        .from('patients')
+        .select('*')
+        .in('id', Array.from(patientIds));
+
+      if (patientsError) throw patientsError;
+
+      setPatients(patientsData || []);
+    } catch (error) {
+      console.error('Error fetching patients:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load patients",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingPatients(false);
+    }
+  };
+
   const handleSave = (section: string) => {
     // TODO: Implement actual save to Supabase
     toast({
@@ -125,14 +184,11 @@ const DoctorProfile = () => {
         </div>
 
         <Tabs defaultValue="professional" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="professional">Professional</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="practice">Practice</TabsTrigger>
             <TabsTrigger value="patients">Patients</TabsTrigger>
-            <TabsTrigger value="schedule">Schedule</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
 
           {/* Professional Information */}
@@ -300,224 +356,51 @@ const DoctorProfile = () => {
             </div>
           </TabsContent>
 
-          {/* Notification Settings */}
-          <TabsContent value="notifications">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="w-5 h-5" />
-                  Notification Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Email Alerts</Label>
-                    <p className="text-sm text-muted-foreground">Receive notifications via email</p>
-                  </div>
-                  <Switch 
-                    checked={notifications.emailAlerts}
-                    onCheckedChange={(checked) => setNotifications({...notifications, emailAlerts: checked})}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>SMS Alerts</Label>
-                    <p className="text-sm text-muted-foreground">Receive critical alerts via SMS</p>
-                  </div>
-                  <Switch 
-                    checked={notifications.smsAlerts}
-                    onCheckedChange={(checked) => setNotifications({...notifications, smsAlerts: checked})}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Appointment Reminders</Label>
-                    <p className="text-sm text-muted-foreground">Get notified about upcoming appointments</p>
-                  </div>
-                  <Switch 
-                    checked={notifications.appointmentReminders}
-                    onCheckedChange={(checked) => setNotifications({...notifications, appointmentReminders: checked})}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Lab Results</Label>
-                    <p className="text-sm text-muted-foreground">Notifications when lab results are ready</p>
-                  </div>
-                  <Switch 
-                    checked={notifications.labResults}
-                    onCheckedChange={(checked) => setNotifications({...notifications, labResults: checked})}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Emergency Alerts</Label>
-                    <p className="text-sm text-muted-foreground">Critical patient emergency notifications</p>
-                  </div>
-                  <Switch 
-                    checked={notifications.emergencyAlerts}
-                    onCheckedChange={(checked) => setNotifications({...notifications, emergencyAlerts: checked})}
-                  />
-                </div>
-                <Button onClick={() => handleSave("Notifications")} className="mt-4">
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Notification Settings
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Practice Settings */}
-          <TabsContent value="practice">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
-                  Practice Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="consultationDuration">Default Consultation Duration (minutes)</Label>
-                    <Input
-                      id="consultationDuration"
-                      type="number"
-                      value={practiceSettings.consultationDuration}
-                      onChange={(e) => setPracticeSettings({...practiceSettings, consultationDuration: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="workingHours">Working Hours</Label>
-                    <Input
-                      id="workingHours"
-                      value={practiceSettings.workingHours}
-                      onChange={(e) => setPracticeSettings({...practiceSettings, workingHours: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="breakTime">Break Time</Label>
-                    <Input
-                      id="breakTime"
-                      value={practiceSettings.breakTime}
-                      onChange={(e) => setPracticeSettings({...practiceSettings, breakTime: e.target.value})}
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-4 pt-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>Weekend Availability</Label>
-                      <p className="text-sm text-muted-foreground">Available for appointments on weekends</p>
-                    </div>
-                    <Switch 
-                      checked={practiceSettings.weekends}
-                      onCheckedChange={(checked) => setPracticeSettings({...practiceSettings, weekends: checked})}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>Emergency Availability</Label>
-                      <p className="text-sm text-muted-foreground">Available for emergency consultations</p>
-                    </div>
-                    <Switch 
-                      checked={practiceSettings.emergencyAvailable}
-                      onCheckedChange={(checked) => setPracticeSettings({...practiceSettings, emergencyAvailable: checked})}
-                    />
-                  </div>
-                </div>
-                
-                <Button onClick={() => handleSave("Practice")} className="mt-4">
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Practice Settings
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           {/* Patient Management */}
           <TabsContent value="patients">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="w-5 h-5" />
-                    My Patients
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">View and manage your patient list</p>
-                  <Button onClick={() => navigate("/find-patient")} className="w-full">
-                    <Users className="w-4 h-4 mr-2" />
-                    View Patient List
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <UserPlus className="w-5 h-5" />
-                    Add New Patient
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">Register a new patient in the system</p>
-                  <Button onClick={() => navigate("/add-patient")} className="w-full">
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Add New Patient
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Schedule Management */}
-          <TabsContent value="schedule">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
-                  My Schedule
+                  <Users className="w-5 h-5" />
+                  My Patients
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground mb-4">Manage your appointments and schedule</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Button onClick={() => navigate("/schedule")} variant="outline">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    View Schedule
-                  </Button>
-                  <Button onClick={() => navigate("/appointments")} variant="outline">
-                    Manage Appointments
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Reports & Analytics */}
-          <TabsContent value="reports">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5" />
-                  Reports & Analytics
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">View practice statistics and generate reports</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Button onClick={() => navigate("/reports")} variant="outline">
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    View Reports
-                  </Button>
-                  <Button onClick={() => navigate("/analytics")} variant="outline">
-                    Practice Analytics
-                  </Button>
-                </div>
+                <p className="text-muted-foreground mb-4">Patients you have treated</p>
+                <Button onClick={fetchMyPatients} className="mb-4" disabled={loadingPatients}>
+                  {loadingPatients ? "Loading..." : "Load Patients"}
+                </Button>
+                
+                {patients.length === 0 && !loadingPatients ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No patients found. Add diagnoses, prescriptions, surgeries, or lab reports to see patients here.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {patients.map((patient) => (
+                      <Card key={patient.id}>
+                        <CardContent className="pt-6">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-semibold text-lg">{patient.name}</h3>
+                              <p className="text-sm text-muted-foreground">ID: {patient.id}</p>
+                              <p className="text-sm text-muted-foreground">Email: {patient.email || 'N/A'}</p>
+                              <p className="text-sm text-muted-foreground">Phone: {patient.phone || 'N/A'}</p>
+                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => navigate(`/find-patient?id=${patient.id}`)}
+                            >
+                              View Details
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
