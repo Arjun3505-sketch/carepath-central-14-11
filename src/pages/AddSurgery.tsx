@@ -119,7 +119,8 @@ const AddSurgery = () => {
           outcome: formData.outcome,
           complications: formData.complications || null,
           icd_pcs_code: formData.icdPcsCode || null,
-          remarks: formData.remarks || null
+          remarks: formData.remarks || null,
+          file_url: fileUrl
         });
 
       if (error) throw error;
