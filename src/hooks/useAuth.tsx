@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/login`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -80,7 +80,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    return { error };
+    if (error) return { error };
+
+    // Create user role - always patient for signup
+    if (data.user) {
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({ user_id: data.user.id, role: 'patient' });
+      
+      if (roleError) return { error: roleError };
+    }
+
+    return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {
