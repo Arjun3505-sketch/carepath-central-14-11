@@ -67,6 +67,7 @@ const Surgeries = () => {
       
       const surgeriesWithDoctorNames = surgeriesData?.map(s => ({
         ...s,
+        file_url: s.file_url,
         doctor_name: doctorMap.get(s.surgeon_id) || 'Unknown Doctor'
       })) || [];
       
